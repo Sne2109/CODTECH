@@ -1,0 +1,64 @@
+package codtech;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class SimpleChatServer {
+    static List<PrintWriter> clients = new ArrayList<>();
+
+    public static void main(String[] args) throws IOException {
+        ServerSocket server = new ServerSocket(1234);
+        System.out.println("Server started...");
+        while (true) {
+            Socket client = server.accept();
+            System.out.println("Client connected");
+            PrintWriter out = new PrintWriter(client.getOutputStream(), true);
+            clients.add(out);
+            new Thread(() -> {
+                try {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                    String msg;
+                    while ((msg = in.readLine()) != null) {
+                        for (PrintWriter writer : clients) writer.println(msg);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
+    }
+}
+
+
+package codtech;
+
+import java.io.*;
+import java.net.*;
+
+public class SimpleChatClient {
+    public static void main(String[] args) throws IOException {
+        Socket socket = new Socket("localhost", 1234);
+        BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+
+        // Thread to read messages from server
+        new Thread(() -> {
+            try {
+                String msg;
+                while ((msg = in.readLine()) != null) {
+                    System.out.println(msg);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        // Main thread to send messages
+        String line;
+        while ((line = userInput.readLine()) != null) {
+            out.println(line);
+        }
+    }
+}
